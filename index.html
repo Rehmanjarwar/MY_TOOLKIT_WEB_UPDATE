@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VIP Key Login</title>
+<style>
+  body { font-family: Arial, sans-serif; text-align: center; padding: 30px; background: #f9f9f9; }
+  img { width: 150px; margin-bottom: 20px; }
+  input[type="text"] { width: 320px; padding: 12px; font-size: 16px; border: 2px solid #ccc; border-radius: 6px; margin-top: 10px; }
+  button { padding: 12px 30px; font-size: 18px; margin-top: 15px; cursor: pointer; border: none; background-color: #222; color: white; border-radius: 6px; }
+  .checkbox-label { font-size: 14px; margin-left: 8px; }
+  .get-key { color: green; cursor: pointer; font-weight: bold; margin-left: 15px; text-decoration: underline; }
+  .popup { display: none; position: fixed; left: 50%; top: 30%; transform: translate(-50%, -50%); padding: 20px 30px; border-radius: 12px; font-weight: bold; font-size: 20px; color: white; animation-duration: 0.6s; z-index: 1000; }
+  .popup.show { display: block; }
+  .popup.success { background-color: #4caf50; animation-name: popSuccess; }
+  .popup.error { background-color: #f44336; animation-name: popError; }
+  @keyframes popSuccess { 0% {transform: translate(-50%, -60%) scale(0);} 50% {transform: translate(-50%, -30%) scale(1.2);} 100% {transform: translate(-50%, -50%) scale(1);} }
+  @keyframes popError { 0% {transform: translate(-50%, -60%) scale(0);} 50% {transform: translate(-50%, -70%) scale(1.2);} 100% {transform: translate(-50%, -50%) scale(1);} }
+
+  .countdown { display: flex; justify-content: center; gap: 20px; font-weight: bold; font-size: 26px; margin-bottom: 20px; }
+  .countdown div { background: #f5f5f5; border-radius: 8px; padding: 10px 20px; min-width: 70px; }
+  .label { font-size: 12px; font-weight: normal; margin-top: 5px; }
+  .box { background-color: #e0e0e0; padding: 15px 20px; margin: 10px auto; border-radius: 20px; font-weight: bold; font-size: 20px; color: #111; width: 100%; max-width: 350px; text-align: center; text-decoration: none; display: block; }
+</style>
+</head>
+<body>
+
+<!-- Login Section -->
+<div id="loginSection">
+  <img src="https://i.imgur.com/G2fWTNz.png" alt="Logo">
+  <div>
+    <label for="loginKey">LOGIN USER:</label><br>
+    <input type="text" id="loginKey" placeholder="Enter your key">
+  </div>
+  <div style="margin-top: 10px;">
+    <input type="checkbox" id="saveKey" checked>
+    <label for="saveKey" class="checkbox-label">SaveKey!</label>
+    <span class="get-key" onclick="window.open('https://wa.me/923220188556', '_blank')">Get Key</span>
+  </div>
+  <button onclick="checkKey()">LOGIN</button>
+  <div id="popup" class="popup"></div>
+</div>
+
+<!-- VIP Section -->
+<div id="vipSection" style="display:none;">
+  <div class="countdown">
+    <div><div id="days">0</div><div class="label">DAYS</div></div>
+    <div><div id="hours">0</div><div class="label">HOURS</div></div>
+    <div><div id="minutes">0</div><div class="label">MINUTES</div></div>
+    <div><div id="seconds">0</div><div class="label">SECONDS</div></div>
+  </div>
+  <img src="https://cdn.discordapp.com/attachments/1159138281189816410/1159140670489632859/AR_HACKER_OFFICIAL_BOY.jpg" alt="AR Hacker Official" />
+  <h3>Welcome VIP Users</h3>
+  <div id="dynamicButtons"></div>
+</div>
+
+<script>
+const BIN_ID = "68b1606fae596e708fdacd3e";  // Your keys bin
+const BTN_BIN_ID = "68b1dd9bae596e708fdb419d";  // Buttons bin
+const API_KEY = "$2a$10$nVIZMsRZGS/TILlwbvH6NeNN/qOSu4Z.xYITCWgXYbG6cHcCDdIO.";
+
+// Load VIP buttons
+async function loadVIPButtons() {
+  try {
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${BTN_BIN_ID}/latest`, {
+      headers: { "X-Master-Key": API_KEY }
+    });
+    const data = await res.json();
+    const buttons = data.record.buttons || [];
+    const container = document.getElementById("dynamicButtons");
+    container.innerHTML = "";
+    buttons.forEach(btn => {
+      const a = document.createElement("a");
+      a.className = "box";
+      a.href = btn.link;
+      a.target = "_blank";
+      a.textContent = btn.text;
+      container.appendChild(a);
+    });
+  } catch(e) {
+    console.error("Error loading buttons:", e);
+  }
+}
+
+// Load saved key
+const saved = localStorage.getItem("savedKey");
+if (saved) document.getElementById("loginKey").value = saved;
+
+// Fetch keys from JSON bin
+async function fetchKeys() {
+  try {
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+      headers: { "X-Master-Key": API_KEY }
+    });
+    const data = await res.json();
+    return data.record || { keys: [], blocked: [] };
+  } catch (e) {
+    console.error(e);
+    return { keys: [], blocked: [] };
+  }
+}
+
+// Check login key
+async function checkKey() {
+  const input = document.getElementById("loginKey").value.trim().toUpperCase();
+  const popup = document.getElementById("popup");
+  const db = await fetchKeys();
+  const keys = db.keys || [];
+  const blocked = db.blocked || [];
+
+  if (blocked.includes(input)) {
+    popup.textContent = "🚫 Blocked Key!";
+    popup.className = "popup error show";
+    setTimeout(()=>{ popup.className="popup"; }, 2500);
+    return;
+  }
+
+  const keyObj = keys.find(k => k.key.toUpperCase() === input);
+  if (keyObj) {
+    const now = new Date();
+    const expiry = new Date(keyObj.expiry);
+    if (now > expiry) {
+      popup.textContent = "⏳ Key Expired!";
+      popup.className = "popup error show";
+      localStorage.removeItem("savedKey");
+      document.getElementById("loginKey").value = "";
+      setTimeout(()=>{ popup.className="popup"; }, 2500);
+      return;
+    }
+
+    popup.textContent = "✅ Key Successful Login!";
+    popup.className = "popup success show";
+    if (document.getElementById("saveKey").checked) localStorage.setItem("savedKey", input);
+
+    setTimeout(()=>{
+      document.getElementById("loginSection").style.display="none";
+      document.getElementById("vipSection").style.display="block";
+      startCountdown(expiry);
+      loadVIPButtons();
+    },1000);
+
+  } else {
+    popup.textContent = "❌ Wrong Key!";
+    popup.className = "popup error show";
+    setTimeout(()=>{ popup.className="popup"; }, 2500);
+  }
+}
+
+// Countdown
+function startCountdown(expiryDate){
+  const countdownDate = expiryDate;
+  const timerInterval = setInterval(()=>{
+    const now = new Date().getTime();
+    const distance = countdownDate.getTime() - now;
+    if(distance < 0){
+      clearInterval(timerInterval);
+      alert("Key Expired! Logging out...");
+      localStorage.removeItem("savedKey");
+      location.reload();
+      return;
+    }
+    document.getElementById("days").textContent = Math.floor(distance / (1000*60*60*24));
+    document.getElementById("hours").textContent = Math.floor((distance % (1000*60*60*24)) / (1000*60*60));
+    document.getElementById("minutes").textContent = Math.floor((distance % (1000*60*60)) / (1000*60));
+    document.getElementById("seconds").textContent = Math.floor((distance % (1000*60)) / 1000);
+  },1000);
+}
+</script>
+
+</body>
+</html>
